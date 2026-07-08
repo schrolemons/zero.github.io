@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>生命级手账本九问｜SCHNIE</title>
+  <meta name="description" content="一个纯 HTML 的生命级手账本九问填写页，支持本地自动保存、导入、导出与打印。" />
+  <style>
+    :root{
+      --bg:#f7f7f4;
+      --paper:#fffefa;
+      --ink:#141414;
+      --muted:#66645f;
+      --thin:#e4e0d8;
+      --line:#c8c1b5;
+      --deep:#000;
+      --soft:#f0eee8;
+      --warn:#7c2d12;
+      --radius:22px;
+      --shadow:0 22px 70px rgba(0,0,0,.08);
+      --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;
+      --serif:"Noto Serif SC","Songti SC","SimSun",serif;
+      --mono:"SFMono-Regular","Cascadia Mono","Consolas",monospace;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 12% 0%,rgba(0,0,0,.05),transparent 24rem),
+        linear-gradient(135deg,#fbfaf7 0%,var(--bg) 48%,#efede7 100%);
+      font-family:var(--sans);
+      line-height:1.82;
+      letter-spacing:.01em;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      opacity:.28;
+      background-image:linear-gradient(rgba(0,0,0,.035) 1px, transparent 1px),linear-gradient(90deg, rgba(0,0,0,.028) 1px, transparent 1px);
+      background-size:36px 36px;
+      mask-image:linear-gradient(to bottom,rgba(0,0,0,.95),transparent 82%);
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:290px minmax(0,1fr);
+      min-height:100vh;
+    }
+
+    aside{
+      position:sticky;
+      top:0;
+      height:100vh;
+      padding:34px 24px;
+      border-right:1px solid var(--thin);
+      background:rgba(247,247,244,.86);
+      backdrop-filter:blur(18px);
+      overflow:auto;
+    }
+
+    .brand{
+      border:1px solid var(--ink);
+      padding:18px 16px 16px;
+      margin-bottom:22px;
+      background:rgba(255,255,255,.42);
+    }
+    .brand .kicker{
+      font-family:var(--mono);
+      font-size:11px;
+      letter-spacing:.24em;
+      color:var(--muted);
+      text-transform:uppercase;
+    }
+    .brand h1{
+      margin:7px 0 0;
+      font-family:var(--serif);
+      font-size:22px;
+      font-weight:600;
+      line-height:1.35;
+    }
+    .brand p{
+      margin:9px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.65;
+    }
+
+    .meta-box{
+      display:grid;
+      gap:10px;
+      margin:18px 0 20px;
+    }
+    label.small-label{
+      display:block;
+      font-family:var(--mono);
+      font-size:11px;
+      color:var(--muted);
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      margin-bottom:5px;
+    }
+    .meta-box input{
+      width:100%;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.62);
+      color:var(--ink);
+      padding:9px 10px;
+      font:14px var(--sans);
+      outline:none;
+    }
+    .meta-box input:focus,.answer:focus{
+      border-color:var(--deep);
+      box-shadow:0 0 0 3px rgba(0,0,0,.06);
+    }
+
+    .progress-wrap{
+      margin:18px 0 18px;
+      padding:14px 0 0;
+      border-top:1px solid var(--thin);
+    }
+    .progress-text{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-family:var(--mono);
+      font-size:12px;
+      margin-bottom:8px;
+    }
+    .progress-bar{
+      height:7px;
+      background:#ded9d0;
+      overflow:hidden;
+      border:1px solid var(--line);
+    }
+    .progress-bar span{
+      display:block;
+      width:0%;
+      height:100%;
+      background:#111;
+      transition:width .25s ease;
+    }
+
+    nav{
+      display:grid;
+      gap:4px;
+      margin-top:18px;
+      border-top:1px solid var(--thin);
+      padding-top:14px;
+    }
+    nav a{
+      color:var(--ink);
+      text-decoration:none;
+      font-size:13px;
+      padding:8px 9px;
+      border-left:2px solid transparent;
+    }
+    nav a:hover{
+      background:rgba(0,0,0,.045);
+      border-left-color:#111;
+    }
+    nav .nav-section{
+      margin-top:12px;
+      font-family:var(--mono);
+      color:var(--muted);
+      font-size:11px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+
+    main{
+      width:min(980px,100%);
+      margin:0 auto;
+      padding:56px 38px 86px;
+    }
+
+    .hero{
+      margin-bottom:42px;
+      padding:50px 42px;
+      border:1px solid var(--ink);
+      background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.44));
+      box-shadow:var(--shadow);
+    }
+    .hero .eyebrow{
+      font-family:var(--mono);
+      letter-spacing:.26em;
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+    }
+    .hero h2{
+      margin:12px 0 8px;
+      font-family:var(--serif);
+      font-size:42px;
+      line-height:1.18;
+      font-weight:600;
+      letter-spacing:.03em;
+    }
+    .hero p{
+      margin:0;
+      max-width:720px;
+      color:#3e3c38;
+      font-size:15px;
+    }
+
+    .toolbar{
+      position:sticky;
+      top:14px;
+      z-index:20;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      margin:0 0 32px;
+      padding:12px;
+      background:rgba(255,254,250,.86);
+      border:1px solid var(--thin);
+      backdrop-filter:blur(16px);
+      box-shadow:0 12px 36px rgba(0,0,0,.06);
+    }
+    button,.file-btn{
+      appearance:none;
+      border:1px solid #111;
+      background:#111;
+      color:#fff;
+      padding:9px 13px;
+      font:13px var(--sans);
+      cursor:pointer;
+      transition:transform .12s ease, background .12s ease, color .12s ease;
+      user-select:none;
+    }
+    button:hover,.file-btn:hover{transform:translateY(-1px)}
+    button.secondary,.file-btn.secondary{
+      background:#fff;
+      color:#111;
+    }
+    button.ghost{
+      border-color:var(--line);
+      background:transparent;
+      color:#111;
+    }
+    button.danger{
+      background:#fff;
+      color:var(--warn);
+      border-color:var(--warn);
+    }
+    .status{
+      margin-left:auto;
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    input[type=file]{display:none}
+
+    .section{
+      margin:44px 0 64px;
+    }
+    .section-head{
+      margin:0 0 20px;
+      padding:24px 26px;
+      border-left:5px solid #111;
+      background:rgba(0,0,0,.045);
+    }
+    .section-head h3{
+      margin:0;
+      font-family:var(--serif);
+      font-size:28px;
+      font-weight:600;
+      letter-spacing:.05em;
+    }
+    .section-head p{
+      margin:7px 0 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .question{
+      background:var(--paper);
+      border:1px solid var(--thin);
+      border-radius:var(--radius);
+      padding:28px;
+      margin:20px 0;
+      box-shadow:0 12px 44px rgba(0,0,0,.055);
+      scroll-margin-top:92px;
+    }
+    .question-title{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      margin:0 0 12px;
+      font-family:var(--serif);
+      font-size:20px;
+      line-height:1.55;
+      font-weight:600;
+    }
+    .qid{
+      flex:0 0 auto;
+      min-width:28px;
+      height:28px;
+      display:grid;
+      place-items:center;
+      border:1px solid #111;
+      font-family:var(--mono);
+      font-size:13px;
+      margin-top:2px;
+    }
+    .prompt{
+      margin:0 0 8px;
+      color:#2c2a27;
+      font-size:15px;
+    }
+    .hint{
+      margin:0 0 18px;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .answers{
+      display:grid;
+      gap:12px;
+      counter-reset:ans;
+    }
+    .answer-row{
+      display:grid;
+      grid-template-columns:32px minmax(0,1fr);
+      gap:10px;
+      align-items:start;
+    }
+    .answer-row::before{
+      counter-increment:ans;
+      content:counter(ans);
+      display:grid;
+      place-items:center;
+      height:38px;
+      color:var(--muted);
+      font-family:var(--mono);
+      font-size:12px;
+      border:1px solid var(--thin);
+      background:var(--soft);
+    }
+    textarea.answer{
+      min-height:46px;
+      width:100%;
+      resize:vertical;
+      border:0;
+      border-bottom:1px solid #111;
+      background:transparent;
+      padding:8px 2px 9px;
+      color:var(--ink);
+      font:16px/1.78 var(--serif);
+      outline:none;
+    }
+    textarea.answer::placeholder{color:#aaa39a}
+
+    .footer-note{
+      margin-top:44px;
+      color:var(--muted);
+      font-size:13px;
+      border-top:1px solid var(--thin);
+      padding-top:20px;
+    }
+
+    .toast{
+      position:fixed;
+      right:20px;
+      bottom:20px;
+      z-index:99;
+      max-width:min(360px,calc(100vw - 40px));
+      padding:13px 15px;
+      background:#111;
+      color:#fff;
+      font-size:13px;
+      box-shadow:0 18px 50px rgba(0,0,0,.25);
+      transform:translateY(18px);
+      opacity:0;
+      pointer-events:none;
+      transition:.18s ease;
+    }
+    .toast.show{transform:translateY(0);opacity:1}
+
+    @media (max-width:900px){
+      .layout{display:block}
+      aside{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--thin)}
+      nav{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+      main{padding:28px 18px 58px}
+      .hero{padding:34px 24px}
+      .hero h2{font-size:32px}
+      .toolbar{top:0}
+      .status{width:100%;margin-left:0}
+    }
+
+    @media print{
+      :root{--bg:#fff;--paper:#fff}
+      body{background:#fff}
+      body::before,aside,.toolbar,.toast{display:none!important}
+      .layout{display:block}
+      main{width:100%;padding:0}
+      .hero,.question{box-shadow:none;border-color:#999;break-inside:avoid}
+      .section{break-before:auto}
+      textarea.answer{border-bottom:1px solid #333;min-height:44px}
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="brand">
+        <div class="kicker">SCHNIE / LIFE NOTEBOOK</div>
+        <h1>生命级手账本九问</h1>
+        <p>本页面为纯 HTML 单文件。填写内容默认只保存在当前浏览器本地；建议定期导出 JSON 备份。</p>
+      </div>
+
+      <div class="meta-box" aria-label="填写信息">
+        <div>
+          <label class="small-label" for="writer">Writer</label>
+          <input id="writer" type="text" placeholder="作答者 / 昵称" />
+        </div>
+        <div>
+          <label class="small-label" for="date">Date</label>
+          <input id="date" type="date" />
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-text"><span>Completion</span><span id="progressNumber">0/27</span></div>
+        <div class="progress-bar" aria-hidden="true"><span id="progressBar"></span></div>
+      </div>
+
+      <nav id="nav" aria-label="章节导航"></nav>
+    </aside>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow">Visible thinking about a real life</div>
+        <h2>在意识清空、浮现、复现之前，留下三行。</h2>
+        <p>这不是普通问卷，而是一份以感知、创造、记录为轴的生命手账。它要求作答者在“告别、重构、漫游”三种处境中，分别整理世界、自我、身份与万物。</p>
+      </section>
+
+      <div class="toolbar" aria-label="操作栏">
+        <button type="button" id="saveBtn">立即保存</button>
+        <button type="button" class="secondary" id="exportJsonBtn">导出 JSON</button>
+        <label class="file-btn secondary" for="importJson">导入 JSON</label>
+        <input id="importJson" type="file" accept="application/json,.json" />
+        <button type="button" class="secondary" id="exportMdBtn">导出 Markdown</button>
+        <button type="button" class="ghost" id="printBtn">打印 / PDF</button>
+        <button type="button" class="danger" id="clearBtn">清空本页</button>
+        <span class="status" id="saveStatus">尚未保存</span>
+      </div>
+
+      <div id="content"></div>
+
+      <p class="footer-note">隐私提示：本页仅是前端展示，不会主动联网提交答案。不同浏览器、不同设备、不同域名下的数据互不共享。</p>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    const STORAGE_KEY = 'schnie.life.handbook.v1';
+    const questions = [
+      {
+        section: '告别宇宙·本始回归',
+        subtitle: '在意识即将被清空之前…你想留下什么？',
+        items: [
+          {
+            tag: '感知',
+            title: '清空所有轨迹，终向世界告别：',
+            prompt: '假如你即将忘掉所有的事情，你的意识“再也不会在任何地方”出现。但是在这之前，你有机会给此时此刻的“自我”写三行告别，你会写下：',
+            hint: '（即“无重生、无复现、无后续的终点”）',
+            placeholders: ['第一行告别', '第二行告别', '第三行告别']
+          },
+          {
+            tag: '赋形',
+            title: '万物初次显形，生命始有轮廓：',
+            prompt: '假如“祂”即将步入你曾经存在过的世界，你想和祂分享三个最早让你“感到世界真实存在”的瞬间：它可以是一次惊喜，也可以是一次痛苦。你会写下：',
+            hint: '（即“意识最初如何被世界唤醒”）',
+            placeholders: ['第一个真实瞬间', '第二个真实瞬间', '第三个真实瞬间']
+          },
+          {
+            tag: '五芒',
+            title: '感受外物指引，借助力量行路：',
+            prompt: '假如“祂”即将步入你曾经存在过的世界，你可以把三件“真正教会你生活的能力”推荐给祂：它们可以来自你热爱的知识、也可以来自生活的压力。你会写下：',
+            hint: '（即“世界曾经塑造了我哪些具体能力”）',
+            placeholders: ['第一种能力', '第二种能力', '第三种能力']
+          }
+        ]
+      },
+      {
+        section: '诞生此地·本我重构',
+        subtitle: '在意识即将浮现之前…你想留下什么？',
+        items: [
+          {
+            tag: '创造',
+            title: '重新定义轨迹，寻找新的人生：',
+            prompt: '假如你即将忘掉所有的事情，你的意识将会“在你出生那一刻”再次出现。在这之前，你有机会给新的“自我”写三行预告，你会写下：',
+            hint: '（即“有无限可能的重生”）',
+            placeholders: ['第一行预告', '第二行预告', '第三行预告']
+          },
+          {
+            tag: '九虹',
+            title: '总结人生经验，建立稳定判断：',
+            prompt: '假如你想要获得你曾认可的身份，你可以留下三条由漫长经历“凝结出的宏观判断”：它高度抽象，足以让新的自己面对各式各样的问题。你会写下：',
+            hint: '（即“我依旧在意哪些足以支撑人生的基本判断”）',
+            placeholders: ['第一条宏观判断', '第二条宏观判断', '第三条宏观判断']
+          },
+          {
+            tag: '灵耀',
+            title: '知识抬高视野，追问生命根源：',
+            prompt: '假如你想要获得你曾认可的身份，你可以留下三句话介绍“真正属于自己的东西”：它向内而生，不讨好任何事物，而是说明自我价值中最深的本质。你会写下：',
+            hint: '（即“我的生命本身的最根本的塑造元素是什么”）',
+            placeholders: ['第一种塑造元素', '第二种塑造元素', '第三种塑造元素']
+          }
+        ]
+      },
+      {
+        section: '漫游世间·故地留迹',
+        subtitle: '在再次体验自己的人生之前…你想留下什么？',
+        items: [
+          {
+            tag: '记录',
+            title: '无法改变轨迹，只能改变态度：',
+            prompt: '假如你即将忘掉所有的事情，你的意识会沿着“体验过的人生”再次出现。在这之前，你有机会给新的“自我”写三行提醒，你会写下：',
+            hint: '（即“命运已定的情况下”）',
+            placeholders: ['第一行提醒', '第二行提醒', '第三行提醒']
+          },
+          {
+            tag: '幽而',
+            title: '认可多元身份，权衡各式可能：',
+            prompt: '假如你即将踏入相同的轨迹，你想给三个“最主要的身份”各写一段话：它们可以是职业、爱好、亲缘、公共身份，或任何曾被世界赋予的责任。你会写下：',
+            hint: '（即“如果重活一次，我如何妥善处理身上的不同身份”）',
+            placeholders: ['给第一个主要身份', '给第二个主要身份', '给第三个主要身份']
+          },
+          {
+            tag: '结理',
+            title: '平视世界万物，融入生命流动：',
+            prompt: '假如你即将踏入相同的轨迹，你想留下三行“与万物重新相处的方式”：不再急着占有、证明、逃离或评判，而是让所见之物都成为生命的一部分。你会写下：',
+            hint: '（即“如何让世界万物在我的认识中流经此生”）',
+            placeholders: ['第一个相处方式', '第二个相处方式', '第三个相处方式']
+          }
+        ]
+      }
+    ];
+
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+    const content = $('#content');
+    const nav = $('#nav');
+    const status = $('#saveStatus');
+    const toast = $('#toast');
+    const writer = $('#writer');
+    const date = $('#date');
+    const progressNumber = $('#progressNumber');
+    const progressBar = $('#progressBar');
+
+    let timer = null;
+
+    function makeId(sectionIndex, itemIndex){
+      return `q${sectionIndex + 1}-${itemIndex + 1}`;
+    }
+
+    function render(){
+      content.innerHTML = '';
+      nav.innerHTML = '';
+      let globalIndex = 1;
+
+      questions.forEach((section, si) => {
+        const sectionId = `section-${si + 1}`;
+        const navTitle = document.createElement('div');
+        navTitle.className = 'nav-section';
+        navTitle.textContent = section.section;
+        nav.appendChild(navTitle);
+
+        const sec = document.createElement('section');
+        sec.className = 'section';
+        sec.id = sectionId;
+        sec.innerHTML = `<div class="section-head"><h3>${escapeHTML(section.section)}</h3><p>${escapeHTML(section.subtitle)}</p></div>`;
+
+        section.items.forEach((q, qi) => {
+          const qid = makeId(si, qi);
+          const a = document.createElement('a');
+          a.href = `#${qid}`;
+          a.textContent = `${globalIndex}.【${q.tag}】${q.title.replace('：','')}`;
+          nav.appendChild(a);
+
+          const card = document.createElement('article');
+          card.className = 'question';
+          card.id = qid;
+          card.innerHTML = `
+            <h4 class="question-title"><span class="qid">${globalIndex}</span><span>【${escapeHTML(q.tag)}】。${escapeHTML(q.title)}</span></h4>
+            <p class="prompt">${escapeHTML(q.prompt)}</p>
+            <p class="hint">${escapeHTML(q.hint)}</p>
+            <div class="answers">
+              ${[0,1,2].map(i => `
+                <div class="answer-row">
+                  <textarea class="answer" data-qid="${qid}" data-index="${i}" rows="1" placeholder="${escapeHTML(q.placeholders[i] || '写下你的回答')}"></textarea>
+                </div>`).join('')}
+            </div>
+          `;
+          sec.appendChild(card);
+          globalIndex++;
+        });
+        content.appendChild(sec);
+      });
+    }
+
+    function escapeHTML(str){
+      return String(str).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+    }
+
+    function today(){
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function collect(){
+      const answers = {};
+      $$('.answer').forEach(el => {
+        const qid = el.dataset.qid;
+        const index = Number(el.dataset.index);
+        if(!answers[qid]) answers[qid] = ['', '', ''];
+        answers[qid][index] = el.value;
+      });
+      return {
+        schema: 'schnie.life.handbook.v1',
+        savedAt: new Date().toISOString(),
+        meta: { writer: writer.value || '', date: date.value || '' },
+        answers
+      };
+    }
+
+    function applyData(data){
+      if(!data || typeof data !== 'object') return;
+      writer.value = data.meta?.writer || '';
+      date.value = data.meta?.date || today();
+      const answers = data.answers || {};
+      $$('.answer').forEach(el => {
+        const arr = answers[el.dataset.qid];
+        el.value = Array.isArray(arr) ? (arr[Number(el.dataset.index)] || '') : '';
+        autoSize(el);
+      });
+      updateProgress();
+    }
+
+    function save(show = false){
+      const data = collect();
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        status.textContent = `已保存 ${new Date().toLocaleTimeString('zh-CN',{hour12:false})}`;
+        if(show) showToast('已保存到当前浏览器。');
+      }catch(err){
+        status.textContent = '保存失败';
+        showToast('保存失败：浏览器本地存储不可用，建议导出 JSON。');
+      }
+      updateProgress();
+    }
+
+    function load(){
+      date.value = today();
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw) applyData(JSON.parse(raw));
+      }catch(err){
+        showToast('读取本地存档失败。');
+      }
+      updateProgress();
+    }
+
+    function scheduleSave(){
+      clearTimeout(timer);
+      status.textContent = '正在编辑…';
+      timer = setTimeout(() => save(false), 450);
+    }
+
+    function updateProgress(){
+      const total = $$('.answer').length;
+      const done = $$('.answer').filter(el => el.value.trim().length > 0).length;
+      progressNumber.textContent = `${done}/${total}`;
+      progressBar.style.width = total ? `${Math.round(done / total * 100)}%` : '0%';
+    }
+
+    function autoSize(el){
+      el.style.height = 'auto';
+      el.style.height = Math.max(46, el.scrollHeight) + 'px';
+    }
+
+    function download(filename, text, type = 'text/plain;charset=utf-8'){
+      const blob = new Blob([text], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function safeDateForFile(){
+      return (date.value || today()).replaceAll('-','');
+    }
+
+    function exportJSON(){
+      const data = collect();
+      download(`生命级手账本九问-${safeDateForFile()}.json`, JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
+      showToast('JSON 已导出。');
+    }
+
+    function questionListFlat(){
+      const list = [];
+      let n = 1;
+      questions.forEach(section => section.items.forEach(q => list.push({ n:n++, section:section.section, ...q })));
+      return list;
+    }
+
+    function exportMarkdown(){
+      const data = collect();
+      const lines = [];
+      lines.push('# 生命级手账本九问');
+      if(data.meta.writer) lines.push(`作答者：${data.meta.writer}`);
+      if(data.meta.date) lines.push(`日期：${data.meta.date}`);
+      lines.push('');
+      const flat = questionListFlat();
+      flat.forEach(q => {
+        const qid = makeId(Math.floor((q.n-1)/3), (q.n-1)%3);
+        lines.push(`## ${q.n}．【${q.tag}】。${q.title}`);
+        lines.push('');
+        lines.push(q.prompt);
+        lines.push(q.hint);
+        lines.push('');
+        (data.answers[qid] || ['', '', '']).forEach((answer, i) => {
+          lines.push(`${i + 1}. ${answer || '　'}`);
+        });
+        lines.push('');
+      });
+      download(`生命级手账本九问-${safeDateForFile()}.md`, lines.join('\n'), 'text/markdown;charset=utf-8');
+      showToast('Markdown 已导出。');
+    }
+
+    function importJSON(file){
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const data = JSON.parse(String(reader.result || '{}'));
+          applyData(data);
+          save(false);
+          showToast('JSON 已导入并保存。');
+        }catch(err){
+          showToast('导入失败：不是可识别的 JSON 文件。');
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    function clearAll(){
+      const ok = confirm('确认清空本页全部填写内容？建议先导出 JSON 备份。');
+      if(!ok) return;
+      writer.value = '';
+      date.value = today();
+      $$('.answer').forEach(el => { el.value = ''; autoSize(el); });
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+      updateProgress();
+      status.textContent = '已清空';
+      showToast('已清空当前浏览器中的存档。');
+    }
+
+    function showToast(message){
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast.t);
+      showToast.t = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    render();
+    load();
+
+    document.addEventListener('input', e => {
+      if(e.target.matches('.answer')) autoSize(e.target);
+      if(e.target.matches('.answer, #writer, #date')){
+        updateProgress();
+        scheduleSave();
+      }
+    });
+
+    $('#saveBtn').addEventListener('click', () => save(true));
+    $('#exportJsonBtn').addEventListener('click', exportJSON);
+    $('#exportMdBtn').addEventListener('click', exportMarkdown);
+    $('#printBtn').addEventListener('click', () => window.print());
+    $('#clearBtn').addEventListener('click', clearAll);
+    $('#importJson').addEventListener('change', e => {
+      importJSON(e.target.files?.[0]);
+      e.target.value = '';
+    });
+
+    window.addEventListener('beforeunload', () => save(false));
+  })();
+  </script>
+</body>
+</html>
