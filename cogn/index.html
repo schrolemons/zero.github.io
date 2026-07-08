@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>社会判断与伦理问答｜SCHNIE</title>
+  <meta name="description" content="一个纯 HTML 的社会判断与伦理问答填写页，支持全量作答、随机抽取、本地保存、导入与导出。" />
+  <style>
+    :root{
+      --bg:#f7f7f4;
+      --paper:#fffefa;
+      --ink:#141414;
+      --muted:#66645f;
+      --thin:#e4e0d8;
+      --line:#c8c1b5;
+      --deep:#000;
+      --soft:#f0eee8;
+      --warn:#7c2d12;
+      --radius:22px;
+      --shadow:0 22px 70px rgba(0,0,0,.08);
+      --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;
+      --serif:"Noto Serif SC","Songti SC","SimSun",serif;
+      --mono:"SFMono-Regular","Cascadia Mono","Consolas",monospace;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 12% 0%,rgba(0,0,0,.05),transparent 24rem),
+        linear-gradient(135deg,#fbfaf7 0%,var(--bg) 48%,#efede7 100%);
+      font-family:var(--sans);
+      line-height:1.82;
+      letter-spacing:.01em;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      opacity:.28;
+      background-image:linear-gradient(rgba(0,0,0,.035) 1px, transparent 1px),linear-gradient(90deg, rgba(0,0,0,.028) 1px, transparent 1px);
+      background-size:36px 36px;
+      mask-image:linear-gradient(to bottom,rgba(0,0,0,.95),transparent 82%);
+    }
+    .layout{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:100vh}
+    aside{
+      position:sticky;top:0;height:100vh;padding:34px 24px;
+      border-right:1px solid var(--thin);
+      background:rgba(247,247,244,.86);backdrop-filter:blur(18px);overflow:auto;
+    }
+    .brand{border:1px solid var(--ink);padding:18px 16px 16px;margin-bottom:22px;background:rgba(255,255,255,.42)}
+    .brand .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--muted);text-transform:uppercase}
+    .brand h1{margin:7px 0 0;font-family:var(--serif);font-size:22px;font-weight:600;line-height:1.35}
+    .brand p{margin:9px 0 0;color:var(--muted);font-size:13px;line-height:1.65}
+    .meta-box{display:grid;gap:10px;margin:18px 0 20px}
+    label.small-label{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px}
+    input,select{
+      width:100%;border:1px solid var(--line);background:rgba(255,255,255,.62);color:var(--ink);
+      padding:9px 10px;font:14px var(--sans);outline:none;
+    }
+    input:focus,select:focus,textarea.answer:focus{border-color:var(--deep);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+    .mode-box{margin:18px 0 20px;padding:15px 0 0;border-top:1px solid var(--thin);display:grid;gap:10px}
+    .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .random-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+    .mini-note{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
+    .progress-wrap{margin:18px 0 18px;padding:14px 0 0;border-top:1px solid var(--thin)}
+    .progress-text{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-family:var(--mono);font-size:12px;margin-bottom:8px}
+    .progress-bar{height:7px;background:#ded9d0;overflow:hidden;border:1px solid var(--line)}
+    .progress-bar span{display:block;width:0%;height:100%;background:#111;transition:width .25s ease}
+    nav{display:grid;gap:4px;margin-top:18px;border-top:1px solid var(--thin);padding-top:14px}
+    nav a{color:var(--ink);text-decoration:none;font-size:13px;padding:8px 9px;border-left:2px solid transparent;white-space:normal;word-break:break-word}
+    nav a:hover{background:rgba(0,0,0,.045);border-left-color:#111}
+    nav .nav-section{margin-top:12px;font-family:var(--mono);color:var(--muted);font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+    main{width:min(1080px,100%);margin:0 auto;padding:56px 38px 86px;display:flex;flex-direction:column;min-height:100vh}
+    .hero{
+      margin-bottom:42px;padding:50px 42px;border:1px solid var(--ink);
+      background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.44));box-shadow:var(--shadow);
+      text-align:center;
+    }
+    .hero .eyebrow{font-family:var(--mono);letter-spacing:.26em;font-size:12px;color:var(--muted);text-transform:uppercase}
+    .hero h2{margin:12px auto 8px;max-width:640px;font-family:var(--serif);font-size:32px;line-height:1.45;font-weight:600;letter-spacing:.03em;text-wrap:balance}
+    .hero p{margin:0 auto;max-width:620px;color:#3e3c38;font-size:15px;line-height:1.7}
+    .toolbar{
+      position:sticky;top:14px;z-index:20;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+      margin:0 0 32px;padding:12px;background:rgba(255,254,250,.86);border:1px solid var(--thin);
+      backdrop-filter:blur(16px);box-shadow:0 12px 36px rgba(0,0,0,.06);
+    }
+    button,.file-btn{
+      appearance:none;border:1px solid #111;background:#111;color:#fff;padding:9px 13px;
+      font:13px var(--sans);cursor:pointer;transition:transform .12s ease, background .12s ease, color .12s ease;user-select:none;text-align:center;
+    }
+    button:hover,.file-btn:hover{transform:translateY(-1px)}
+    button.secondary,.file-btn.secondary{background:#fff;color:#111}
+    button.ghost{border-color:var(--line);background:transparent;color:#111}
+    button.danger{background:#fff;color:var(--warn);border-color:var(--warn)}
+    button.active{background:#111;color:#fff}
+    button.inactive{background:#fff;color:#111;border-color:var(--line)}
+    .status{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+    input[type=file]{display:none}
+    .filter-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;width:100%;border-top:1px solid var(--thin);padding-top:10px;margin-top:2px}
+    .view-note{font-family:var(--mono);font-size:12px;color:var(--muted);margin:0 0 18px}
+    .section{margin:44px 0 64px}
+    .section-head{margin:0 0 20px;padding:24px 26px;border-left:5px solid #111;background:rgba(0,0,0,.045)}
+    .section-head h3{margin:0;font-family:var(--serif);font-size:28px;font-weight:600;letter-spacing:.05em}
+    .section-head p{margin:7px 0 0;color:var(--muted);font-size:14px}
+    .question{
+      background:var(--paper);border:1px solid var(--thin);border-radius:var(--radius);padding:28px;margin:20px 0;
+      box-shadow:0 12px 44px rgba(0,0,0,.055);scroll-margin-top:92px;
+    }
+    .question-title{display:flex;gap:12px;align-items:flex-start;margin:0 0 12px;font-family:var(--serif);font-size:20px;line-height:1.55;font-weight:600}
+    .qid{
+      flex:0 0 auto;min-width:34px;height:30px;display:grid;place-items:center;border:1px solid #111;
+      font-family:var(--mono);font-size:12px;margin-top:2px;background:#fff;
+    }
+    .question-type{margin:0 0 8px;color:var(--muted);font-family:var(--mono);font-size:12px;letter-spacing:.08em}
+    .prompt{margin:0 0 8px;color:#2c2a27;font-size:15px}
+    .hint{margin:0 0 18px;color:var(--muted);font-size:14px}
+    textarea.answer{
+      min-height:128px;width:100%;resize:vertical;border:1px solid var(--line);background:rgba(255,255,255,.56);
+      border-bottom:1px solid #111;padding:12px 13px;color:var(--ink);font:16px/1.78 var(--serif);outline:none;
+    }
+    textarea.answer::placeholder{color:#aaa39a}
+    .empty{padding:34px 28px;border:1px dashed var(--line);background:rgba(255,255,255,.44);color:var(--muted)}
+    .footer-note{margin-top:auto;color:var(--muted);font-size:13px;border-top:1px solid var(--thin);padding-top:20px;text-align:center}
+    .toast{
+      position:fixed;right:20px;bottom:20px;z-index:99;max-width:min(360px,calc(100vw - 40px));
+      padding:13px 15px;background:#111;color:#fff;font-size:13px;box-shadow:0 18px 50px rgba(0,0,0,.25);
+      transform:translateY(18px);opacity:0;pointer-events:none;transition:.18s ease;
+    }
+    .toast.show{transform:translateY(0);opacity:1}
+    @media (max-width:900px){
+      .layout{display:block} aside{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--thin)}
+      nav{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))} main{padding:28px 18px 58px}
+      .hero{padding:34px 24px} .hero h2{font-size:32px} .toolbar{top:0} .status{width:100%;margin-left:0}
+      .filter-line{grid-template-columns:1fr}
+    }
+    @media print{
+      :root{--bg:#fff;--paper:#fff} body{background:#fff} body::before,aside,.toolbar,.toast{display:none!important}
+      .layout{display:block} main{width:100%;padding:0} .hero,.question{box-shadow:none;border-color:#999;break-inside:avoid}
+      .section{break-before:auto} textarea.answer{border:1px solid #999;min-height:110px}
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="brand">
+        <div class="kicker">SCHNIE / JUDGMENT FORM</div>
+        <h1>价值判断与人生观点</h1>
+        <p>本页面为纯 HTML 单文件。支持全量作答与随机抽取，填写内容默认只保存在当前浏览器本地。</p>
+      </div>
+      <div class="meta-box" aria-label="填写信息">
+        <div><label class="small-label" for="writer">Writer</label><input id="writer" type="text" placeholder="作答者 / 昵称" /></div>
+        <div><label class="small-label" for="date">Date</label><input id="date" type="date" /></div>
+      </div>
+      <div class="mode-box" aria-label="作答模式">
+        <label class="small-label">Mode</label>
+        <div class="mode-grid">
+          <button type="button" id="allModeBtn" class="active">全部题目</button>
+          <button type="button" id="randomModeBtn" class="inactive">随机抽取</button>
+        </div>
+        <div class="random-row">
+          <div>
+            <label class="small-label" for="randomCount">Random Count</label>
+            <input id="randomCount" type="number" min="9" max="108" value="18" />
+          </div>
+          <button type="button" class="secondary" id="drawBtn">抽取</button>
+        </div>
+        <p class="mini-note">随机抽取下限为 9；每一类题目至少抽取 1 题，剩余题目从全部题库中补足。</p>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-text"><span>Completion</span><span id="progressNumber">0/108</span></div>
+        <div class="progress-bar" aria-hidden="true"><span id="progressBar"></span></div>
+      </div>
+      <nav id="nav" aria-label="章节导航"></nav>
+    </aside>
+    <main>
+      <section class="hero">
+        <div class="eyebrow">Visible thinking about judgment and ethics</div>
+        <h2>利用这些问题，初步建立认知结构。</h2>
+        <p>这是一份用于线上填写的价值判断与人生观点题集。你可以完整作答全部题目，也可以按九类题目均衡随机抽取；答案自动缓存在浏览器，并可导出备份。</p>
+      </section>
+      <div class="toolbar" aria-label="操作栏">
+        <button type="button" id="saveBtn">立即保存</button>
+        <button type="button" class="secondary" id="exportJsonBtn">导出 JSON</button>
+        <label class="file-btn secondary" for="importJson">导入 JSON</label>
+        <input id="importJson" type="file" accept="application/json,.json" />
+        <button type="button" class="secondary" id="exportMdBtn">导出当前 Markdown</button>
+        <button type="button" class="secondary" id="exportAllMdBtn">导出全部 Markdown</button>
+        <button type="button" class="ghost" id="printBtn">打印 / PDF</button>
+        <button type="button" class="danger" id="clearBtn">清空本页</button>
+        <span class="status" id="saveStatus">尚未保存</span>
+        <div class="filter-line">
+          <input id="searchInput" type="search" placeholder="筛选题目 / 思考示范 / 类型关键词" />
+          <button type="button" class="ghost" id="clearSearchBtn">清除筛选</button>
+        </div>
+      </div>
+      <p class="view-note" id="viewNote"></p>
+      <div id="content"></div>
+      <p class="footer-note">隐私提示：本页不会主动联网提交答案，答案仍默认保存于访问者自己的浏览器本地；不同浏览器、不同设备、不同域名下的数据互不共享。</p>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+  (() => {
+    'use strict';
+    const STORAGE_KEY = 'schnie.judgment.ethics.form.v1';
+    const sections = [
+  {
+    "title": "一、事实、证据与叙事判断",
+    "items": [
+      {
+        "id": 1,
+        "question": "你如何看待用标签、类别或立场来替代对具体事实的判断？",
+        "hint": "思考示范：分类有助于降低理解成本，但也可能遮蔽对象本身的复杂性"
+      },
+      {
+        "id": 2,
+        "question": "你如何看待人们对权威的信任来源？",
+        "hint": "思考示范：信任权威可能来自秩序需求、早期认知依赖，或外部诱导与强迫"
+      },
+      {
+        "id": 3,
+        "question": "你如何看待偏见的来源？",
+        "hint": "思考示范：偏见可能来自自我优越感、经验积累，或认知懒惰"
+      },
+      {
+        "id": 4,
+        "question": "你如何看待模糊信念、自然崇拜或伪科学对判断的影响？",
+        "hint": "思考示范：是否依赖模糊、无害化、自然化的解释系统"
+      },
+      {
+        "id": 5,
+        "question": "你如何看待传统知识体系与现代验证标准之间的关系？",
+        "hint": "思考示范：传统经验是否应接受现代逻辑和证据标准检验"
+      },
+      {
+        "id": 6,
+        "question": "你是否认为在证据被不对等掌握时，质疑者仍应承担完整的举证责任？",
+        "hint": "思考示范：证据可得性、质疑权利与责任分配之间存在距离"
+      },
+      {
+        "id": 7,
+        "question": "你如何看待职业、身份与个人尊严之间的关系？",
+        "hint": "思考示范：值得尊重的是否不是职业标签本身，而是人和行为"
+      },
+      {
+        "id": 8,
+        "question": "你如何看待将个人对艺术的判断/个人选择，与爱国主义相绑定的倾向？",
+        "hint": "思考示范：精神世界的表达，是否应被上升为对宏大价值的表态"
+      },
+      {
+        "id": 9,
+        "question": "你是否认为客观事实、国家竞技可以为了群体立场而进行有利化重构？",
+        "hint": "思考示范：冷门赛道的规模优势，是否被包装成过于理想的个人奋斗故事"
+      },
+      {
+        "id": 10,
+        "question": "你如何看待民族品牌、国家情感与产品质量评价之间的关系？",
+        "hint": "思考示范：国家情感是否应该让消费者减弱对质量的判断"
+      },
+      {
+        "id": 11,
+        "question": "你如何看待个体将时代、集体或世界的不确定性理解为自身使命的倾向？",
+        "hint": "思考示范：宏大目标可以提供方向感，但也可能让个体承担超出自身的责任"
+      },
+      {
+        "id": 12,
+        "question": "你是否认为宏大叙事中的负面代价，应由参与其中的个体自行消化？",
+        "hint": "思考示范：整体运行的必要成本，与个体承受边界之间存在责任分配问题"
+      }
+    ]
+  },
+  {
+    "title": "二、错误、规矩与正义判断",
+    "items": [
+      {
+        "id": 13,
+        "question": "你如何看待对非原则性的错误行为的宽容、淡化或调解？",
+        "hint": "思考示范：问题该不该灵活地降低严重性"
+      },
+      {
+        "id": 14,
+        "question": "你如何看待先违规、后承认并配合处罚的行为？",
+        "hint": "思考示范：是否认可先获利或达到目标，再补救式认错"
+      },
+      {
+        "id": 15,
+        "question": "你如何看待为维护所需网络和舆论环境，而减少犯错信息的比例？",
+        "hint": "思考示范：压制提出问题者是否具备合理性；欺瞒能否成为一种保护"
+      },
+      {
+        "id": 16,
+        "question": "你如何看待规矩从“保护伞”变成“冷漠底气”的过程？",
+        "hint": "思考示范：个体是否会借“遵守规矩”来回避判断、合理化对他人处境的漠视"
+      },
+      {
+        "id": 17,
+        "question": "你是否认为只要存在相关的规定，就需要被严格遵循？",
+        "hint": "思考示范：无论什么样的规则道德，都应该被无论程度地利用；无理由退货"
+      },
+      {
+        "id": 18,
+        "question": "你如何看待基于性别、健康状况或年龄的差别对待？",
+        "hint": "思考示范：对特殊群体的优待是否与公平原则冲突"
+      },
+      {
+        "id": 19,
+        "question": "你如何看待对于非人生物的选择性保护？",
+        "hint": "思考示范：保护标准是否只偏向被认为有益的对象、宠物"
+      },
+      {
+        "id": 20,
+        "question": "你如何看待付费优先权？",
+        "hint": "思考示范：花钱获得更快通道，是否等同于合理插队"
+      },
+      {
+        "id": 21,
+        "question": "你如何看待对负面公众人物的恶搞？",
+        "hint": "思考示范：恶搞是否会因对象负面而被合理化"
+      },
+      {
+        "id": 22,
+        "question": "你如何看待以合理手段获得超出规定范围的利益？",
+        "hint": "思考示范：如果手段本身合理，但最终占据了超出规定范围的资源"
+      },
+      {
+        "id": 23,
+        "question": "你如何看待多数意见/做法与正确性之间的关系？",
+        "hint": "思考示范：多数是否必然等于正确；多数霸凌"
+      },
+      {
+        "id": 24,
+        "question": "你如何看待手段正当性与结果完美性之间的冲突？",
+        "hint": "思考示范：当正义需要不必要的牺牲，而不正当手段能轻松抵达正义结果时"
+      }
+    ]
+  },
+  {
+    "title": "三、个体选择与文化差异",
+    "items": [
+      {
+        "id": 25,
+        "question": "你如何看待不迎合外界期待的权利？",
+        "hint": "思考示范：当他人的期待包含报复、情感勒索时，个体是否有权选择性回应"
+      },
+      {
+        "id": 26,
+        "question": "你是否认为私域中的个人选择（如取向、生活方式）应免于外界干涉？",
+        "hint": "思考示范：外部力量是否无权介入不伤害他人的私域选择"
+      },
+      {
+        "id": 27,
+        "question": "你如何看待个体在外界评价体系中的自我认可？",
+        "hint": "思考示范：人的价值是否必须通过主流评价、外界分数或他人接纳来证明"
+      },
+      {
+        "id": 28,
+        "question": "你如何看待虚拟空间中的自我认同？",
+        "hint": "思考示范：脱离现实的虚拟空间，是否也能承载真实而深层的自我认同"
+      },
+      {
+        "id": 29,
+        "question": "你如何看待理想符号与现实对象之间的距离？",
+        "hint": "思考示范：个体是否应避免把抽象情感强行压到具体的人或事物上"
+      },
+      {
+        "id": 30,
+        "question": "你如何看待个体隐私与他人需求之间的边界？",
+        "hint": "思考示范：私人信息是否应被尊重和加密；是否个体清白就应该接受检验"
+      },
+      {
+        "id": 31,
+        "question": "你如何看待接触他国文化与保持本土文化之间的关系？",
+        "hint": "思考示范：外来文化是否应被理解为一种破坏纯洁性、自豪感的威胁"
+      },
+      {
+        "id": 32,
+        "question": "你如何看待本土文化中文化影响力不对等的问题？",
+        "hint": "思考示范：强势文化是否可能对少数群体形成压迫性影响；文化霸权"
+      },
+      {
+        "id": 33,
+        "question": "你如何看待道德要求的边界？",
+        "hint": "思考示范：道德是否应该变成强迫他人行善的工具；道德绑架"
+      },
+      {
+        "id": 34,
+        "question": "你如何看待不符合公共礼仪行为的成因判断？",
+        "hint": "思考示范：同一行为可能被理解为缺乏教养、文化差异，或刻意添堵"
+      },
+      {
+        "id": 35,
+        "question": "你如何看待游戏在被纳入“负责任“的框架后，其文化评价可能会发生变化？",
+        "hint": "思考示范：同一行为的意义，可能受个人自制、社会规则与文化禁忌影响"
+      },
+      {
+        "id": 36,
+        "question": "你如何看待文化开放与文化约束之间的平衡？",
+        "hint": "思考示范：开放或保守是否都不应被视为天然正确"
+      }
+    ]
+  },
+  {
+    "title": "四、后代培养与家庭权力",
+    "items": [
+      {
+        "id": 37,
+        "question": "你如何看待通过羞辱、打压、苦难攀比来塑造人格的教育方式？",
+        "hint": "思考示范：需求是否会被贬低和压制；苦难是否被赋予过高的教育价值"
+      },
+      {
+        "id": 38,
+        "question": "你如何看待以贫困、匮乏或亏欠感教育孩子，使其上进？",
+        "hint": "思考示范：是否通过哭穷制造压力"
+      },
+      {
+        "id": 39,
+        "question": "你是否认为没有能力为后代提供稳定条件的家庭，应慎重推迟或放弃生育？",
+        "hint": "思考示范：个体选择不必被轻易否定，但后代并不应成为承担缺口的对象"
+      },
+      {
+        "id": 40,
+        "question": "你如何看待体罚在教育中的位置，尤其对无法沟通、顽皮的孩子？",
+        "hint": "思考示范：是否认可暴力管教；棍棒“教育”"
+      },
+      {
+        "id": 41,
+        "question": "你如何看待把社会应酬能力作为后代培养重点？",
+        "hint": "思考示范：是否强调社交习俗和人情技巧；紧密关系足以处理所有现实问题"
+      },
+      {
+        "id": 42,
+        "question": "你如何看待培养顺从型人格？",
+        "hint": "思考示范：是否强调被动、木讷、听话"
+      },
+      {
+        "id": 43,
+        "question": "你如何看待父母把自己的旧世界观强加给孩子，施加父权式关怀？",
+        "hint": "思考示范：是否把自身或亲戚对外界的认知和情感，当做必须继承的财富"
+      },
+      {
+        "id": 44,
+        "question": "你如何看待父母对子女的权力来源？",
+        "hint": "思考示范：父母是否把养育视为对子女的恩赐；子女出生是否是父母的强迫"
+      },
+      {
+        "id": 45,
+        "question": "你如何看待后天情感与先天血缘之间的关系？",
+        "hint": "思考示范：后天建立的情感连接，是否能够压过先天血脉关系"
+      },
+      {
+        "id": 46,
+        "question": "你如何看待父母在无法兜底最坏结果时，仍鼓励后代承担高风险选择？",
+        "hint": "思考示范：培养独立性与转嫁后果之间，存在责任边界；望子成龙"
+      },
+      {
+        "id": 47,
+        "question": "你如何看待生命延续与个人生活体验之间的冲突？",
+        "hint": "思考示范：个体是更应享受属于自己的生活，还是承担延续生命的责任"
+      },
+      {
+        "id": 48,
+        "question": "你如何看待家庭对心理健康问题的理解？",
+        "hint": "思考示范：是否把心理疾病简单视为情绪问题或意志问题"
+      }
+    ]
+  },
+  {
+    "title": "五、教育路线与竞争伦理",
+    "items": [
+      {
+        "id": 49,
+        "question": "你如何看待受教育目的的不同层级？",
+        "hint": "思考示范：读书可以被理解为生存工具、自我修养路径，或秩序维系方式"
+      },
+      {
+        "id": 50,
+        "question": "你如何看待教育内容与现实需求不同时，仍要求学习者优先完成标准路径？",
+        "hint": "思考示范：纸面评价、实际能力与路径服从之间的权衡"
+      },
+      {
+        "id": 51,
+        "question": "你如何看待在明显缺乏天赋的领域中，持续投入高强度努力？",
+        "hint": "思考示范：努力是否应被无条件肯定，还是需要考虑天赋适配"
+      },
+      {
+        "id": 52,
+        "question": "你如何看待用行为数据、学习轨迹来评价学生，而不是只看最终成绩？",
+        "hint": "思考示范：过程可见性是否带来更公平的评价，还是形成无用的规训"
+      },
+      {
+        "id": 53,
+        "question": "你是否认为教育中的“优秀学生”标签，可能反过来限制一个人的自我理解？",
+        "hint": "思考示范：外部认可、身份惯性与主体更新之间的冲突"
+      },
+      {
+        "id": 54,
+        "question": "你是否认为一部分人可以走向更深的兴趣路线，而不是持续追求全面发展？",
+        "hint": "思考示范：广泛培养、单一热爱与自我归属之间的选择"
+      },
+      {
+        "id": 55,
+        "question": "你是否认为在科学技术发达的今天，教育仍应保留一部分缓慢重复的训练？",
+        "hint": "思考示范：低效训练是否仍是能力生成的土壤，还是应被工具效率替代"
+      },
+      {
+        "id": 56,
+        "question": "你如何看待教育中的完美主义？",
+        "hint": "思考示范：朝着单一的“最优解”来改造自己；惩罚犯错，不认可失败的意义"
+      },
+      {
+        "id": 57,
+        "question": "你如何看待竞争中依靠信息差、资源差或指导差距取得优势？",
+        "hint": "思考示范：优势是合理积累，还是会遮蔽个人能力本身"
+      },
+      {
+        "id": 58,
+        "question": "你是否认为优秀者在竞争中获得优势后，应对较弱者保留最低限度的机会？",
+        "hint": "思考示范：是否为天生较弱者设立专门的“获奖名额”"
+      },
+      {
+        "id": 59,
+        "question": "你如何看待竞争中的同理心？",
+        "hint": "思考示范：是否对竞争者的失败或痛苦（甚至生死）无感；消遣他人的不幸"
+      },
+      {
+        "id": 60,
+        "question": "你如何看待把长期未被严格执行的规则，在竞争阶段突然追溯到具体个人？",
+        "hint": "思考示范：以“维护公平”为名，主动扩大他人缺陷或旧错的影响范围"
+      }
+    ]
+  },
+  {
+    "title": "六、个人成长与自我建构",
+    "items": [
+      {
+        "id": 61,
+        "question": "你如何看待人生发展中被默认接受的“阶段性秩序”？",
+        "hint": "思考示范：是否应将普遍路径视为个人成长的必要标准"
+      },
+      {
+        "id": 62,
+        "question": "你如何看待个人成长中来自非权威者的提醒、质疑与反馈？",
+        "hint": "思考示范：成长是否只依赖成熟者、成功者或权威者的指导"
+      },
+      {
+        "id": 63,
+        "question": "你如何看待把成长主要理解为获得更高效率、更强能力或更好结果？",
+        "hint": "思考示范：工具性提升、生命体验与主体完整之间的权衡"
+      },
+      {
+        "id": 64,
+        "question": "你如何看待人类“创作”的意义？",
+        "hint": "思考示范：创作的意义可以来自表达、记录、理解世界"
+      },
+      {
+        "id": 65,
+        "question": "你如何看待天赋与个人适配性？",
+        "hint": "思考示范：是否认为每个人都有更适合自己的方向"
+      },
+      {
+        "id": 66,
+        "question": "你如何看待兴趣与专业能力之间的关系？",
+        "hint": "思考示范：兴趣是否不必然发展为专长"
+      },
+      {
+        "id": 67,
+        "question": "你如何看待说谎在认知和道德中的位置？",
+        "hint": "思考示范：说谎是认知上的积极突破，还是不慎染上的恶习"
+      },
+      {
+        "id": 68,
+        "question": "你如何看待上进的成本？",
+        "hint": "思考示范：是否承认不是每个人都能承担持续上进的代价"
+      },
+      {
+        "id": 69,
+        "question": "你如何看待个性与独立思考？",
+        "hint": "思考示范：是否排斥与主流不同的表达和判断"
+      },
+      {
+        "id": 70,
+        "question": "你如何看待自我稳定性与外部影响之间的关系？",
+        "hint": "思考示范：个体是应以不变观点观察外界，还是在外界影响中持续改变自我"
+      },
+      {
+        "id": 71,
+        "question": "你如何看待个人成长中“清醒”的代价？",
+        "hint": "思考示范：理解更多真相是否必然带来更好的成长"
+      },
+      {
+        "id": 72,
+        "question": "你如何看待在成长过程中维持天真、好奇与感知力？",
+        "hint": "思考示范：成熟是否必然意味着钝化热爱；精神体验、审美体验的重要性"
+      }
+    ]
+  },
+  {
+    "title": "七、生命观与死亡观",
+    "items": [
+      {
+        "id": 73,
+        "question": "你如何判断“我的生命”的正式开始？",
+        "hint": "思考示范：生命的开始可以从生物存在、自我意识、社会身份等角度理解"
+      },
+      {
+        "id": 74,
+        "question": "你如何看待人在追求新的生活阶段时，对旧有自我和旧有体验的留恋？",
+        "hint": "思考示范：成长是否必然伴随旧自我的消逝，如何理解新旧自我的连续性"
+      },
+      {
+        "id": 75,
+        "question": "你如何看待当生命延续伴随显著痛苦时，个体意愿与亲人牵挂之间的权衡？",
+        "hint": "思考示范：生命是否服从对痛苦的感受，还是也应纳入牵挂与责任的考量"
+      },
+      {
+        "id": 76,
+        "question": "你如何看待为了保留尊严、早期生活质量而降低生存长度的选择？",
+        "hint": "思考示范：生命长度、主体尊严与现实承受能力之间的排序"
+      },
+      {
+        "id": 77,
+        "question": "你如何看待生存意义的不同来源？",
+        "hint": "思考示范：弥补精神生活、维系社会秩序，或享受物质生活的美好"
+      },
+      {
+        "id": 78,
+        "question": "你如何看待延迟享受？",
+        "hint": "思考示范：是否长期压抑当下需求以换取未来收益"
+      },
+      {
+        "id": 79,
+        "question": "你如何看待没有自我意识的生命价值？",
+        "hint": "思考示范：一个没有自我意识的生命，是否仍具有生命价值"
+      },
+      {
+        "id": 80,
+        "question": "你如何看待“死亡恐惧”的根本原因？",
+        "hint": "思考示范：对终结的害怕，还是对既有美好失去照护的担忧"
+      },
+      {
+        "id": 81,
+        "question": "你如何看待退休后的生命意义？",
+        "hint": "思考示范：退休是否被视为生命进入倒计时"
+      },
+      {
+        "id": 82,
+        "question": "你如何判断“我的生命”的正式结束？",
+        "hint": "思考示范：生命的结束可以由生理死亡、意识消失、记忆断裂来理解"
+      },
+      {
+        "id": 83,
+        "question": "你如何看待死亡意识对生活选择的影响？",
+        "hint": "思考示范：死亡的不可避免性是否会改变当下选择"
+      },
+      {
+        "id": 84,
+        "question": "你如何看待生命末期的治疗选择？",
+        "hint": "思考示范：是否抗拒对绝症进行高强度医学干预"
+      }
+    ]
+  },
+  {
+    "title": "八、有限资源与公民意识",
+    "items": [
+      {
+        "id": 85,
+        "question": "你如何看待“可替代性”带来的压迫？",
+        "hint": "思考示范：是否认为只有过度付出才配获得收入和尊重"
+      },
+      {
+        "id": 86,
+        "question": "你如何看待由少数主体造成的公共损耗，最终转化为普通个体的责任？",
+        "hint": "思考示范：责任应由破坏者优先承担，还是可以通过规则要求大众共同修复"
+      },
+      {
+        "id": 87,
+        "question": "你如何看待通过增加人口来改变命运的想法？",
+        "hint": "思考示范：是否试图通过多生育后代来对抗资源、环境劣势"
+      },
+      {
+        "id": 88,
+        "question": "你如何看待个体或组织长期占有超出自身需要的稀缺资源？",
+        "hint": "思考示范：资源优势是否应受到公共需求与责任边界的约束"
+      },
+      {
+        "id": 89,
+        "question": "你如何看待个体在有限资源下，为追求安稳而长期压缩自身需求？",
+        "hint": "思考示范：节省可能因忽视健康、时间与体验成本而造成更大的隐性损失"
+      },
+      {
+        "id": 90,
+        "question": "你如何看待公共系统提供的资源与民众供给之间的关系？",
+        "hint": "思考示范：是否应意识到公共服务，来源于纳税人共同承担的成本"
+      },
+      {
+        "id": 91,
+        "question": "你如何看待原本出于公共责任的义务活动，被转化为可考核的任务？",
+        "hint": "思考示范：崇高行为被任务化后，是扩大了公共参与，还是削弱了真实分量"
+      },
+      {
+        "id": 92,
+        "question": "你如何看待行业寡头以规则、渠道或资本优势限制后来者发展？",
+        "hint": "思考示范：资源占有应考量其是否促进效率、创新与更广泛的社会收益"
+      },
+      {
+        "id": 93,
+        "question": "你如何看待以公共利益之名，将个体牺牲、过度实习合理化？",
+        "hint": "思考示范：公共责任是否应该将个体损耗包装为理所当然、缺回报的奉献"
+      },
+      {
+        "id": 94,
+        "question": "你如何看待接受公共服务时，权利意识与尊重服务者之间的边界？",
+        "hint": "思考示范：纳税人身份不应削弱对公共服务人员的基本尊重"
+      },
+      {
+        "id": 95,
+        "question": "你如何看待有限自然景观作为公共财富的归属问题？",
+        "hint": "思考示范：自然资源属于全体人民共同享有，适度收费可以用于维护"
+      },
+      {
+        "id": 96,
+        "question": "你如何看待普通人在重大民生风险中，难以获得相应权利保障？",
+        "hint": "思考示范：当权利与义务明显失衡时，应如何理解责任归属与制度兜底"
+      }
+    ]
+  },
+  {
+    "title": "九、人工智能与虚拟财产",
+    "items": [
+      {
+        "id": 97,
+        "question": "你如何看待AI输出的可信度？",
+        "hint": "思考示范：是否无条件相信 AI 生成的内容，因为其背后是高深的技术"
+      },
+      {
+        "id": 98,
+        "question": "你如何看待不同学科背景使用 AI 的能力差异？",
+        "hint": "思考示范：是否把 AI 使用能力简单绑定到文科或理科身份上"
+      },
+      {
+        "id": 99,
+        "question": "你如何看待 AI 作品的意义？",
+        "hint": "思考示范：AI 生成的传统形式作品、虚拟体验影像，是否具有不同意义"
+      },
+      {
+        "id": 100,
+        "question": "你是否认为AI对艺术的学习，是一种文明传承，还是一种非正当的掠夺？",
+        "hint": "思考示范：人类学习、机器训练、授权边界、精神交流之间存在差异"
+      },
+      {
+        "id": 101,
+        "question": "你如何看待AI降低创作门槛后，表达自由与低质内容泛滥之间的冲突？",
+        "hint": "思考示范：低成本表达可能扩大主体性，也可能放大信息污染"
+      },
+      {
+        "id": 102,
+        "question": "你如何看待“AI艺术”的价值应以作品效果为中心，还是以创作者为中心？",
+        "hint": "思考示范：作品中心强调文明表达，人类中心强调创作过程与责任归属"
+      },
+      {
+        "id": 103,
+        "question": "你如何看待虚拟财产作为个体精神世界的外化符号？",
+        "hint": "思考示范：虚拟物品可能承载自我认同、情绪依靠与群体归属"
+      },
+      {
+        "id": 104,
+        "question": "你如何看待数字内容和创作成果的权利边界？",
+        "hint": "思考示范：是否重视版权归属和使用边界；版权法的滥用"
+      },
+      {
+        "id": 105,
+        "question": "你如何看待无版权资源在具备低成本传播条件时，仍有刻意的获取门槛？",
+        "hint": "思考示范：是否人为制造知识门槛和信息差，以减小竞争和外行人的批判"
+      },
+      {
+        "id": 106,
+        "question": "你如何看待信息本身的价值？",
+        "hint": "思考示范：是否接受为可批量复制的信息付费"
+      },
+      {
+        "id": 107,
+        "question": "你如何看待低成本生成的虚拟物，被人为制造稀缺性并赋予高价？",
+        "hint": "思考示范：稀缺性可能来自规则、认同，也可能来自欲望制造"
+      },
+      {
+        "id": 108,
+        "question": "你如何看待对并不真正归属于自己的虚拟符号产生强烈依附？",
+        "hint": "思考示范：情感投射可能模糊自我需要、现实归属与外界符号的边界"
+      }
+    ]
+  }
+];
+    const SECTION_COUNT = sections.length;
+    const TOTAL_COUNT = sections.reduce((sum, s) => sum + s.items.length, 0);
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+    const content = $('#content');
+    const nav = $('#nav');
+    const status = $('#saveStatus');
+    const toast = $('#toast');
+    const writer = $('#writer');
+    const date = $('#date');
+    const progressNumber = $('#progressNumber');
+    const progressBar = $('#progressBar');
+    const allModeBtn = $('#allModeBtn');
+    const randomModeBtn = $('#randomModeBtn');
+    const randomCount = $('#randomCount');
+    const searchInput = $('#searchInput');
+    const viewNote = $('#viewNote');
+    let timer = null;
+    let state = { mode:'all', randomIds:[], search:'' };
+    function today(){
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function escapeHTML(str){
+      return String(str ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+    }
+    function flatQuestions(){
+      const list=[];
+      sections.forEach((section, si) => section.items.forEach(q => list.push({...q, section:section.title, sectionIndex:si})));
+      return list;
+    }
+    function getQuestionById(id){ return flatQuestions().find(q => q.id === id); }
+    function normalizeCount(n){
+      const parsed = Number.parseInt(n, 10);
+      if(Number.isNaN(parsed)) return SECTION_COUNT;
+      return Math.min(TOTAL_COUNT, Math.max(SECTION_COUNT, parsed));
+    }
+    function shuffle(arr){
+      const a = [...arr];
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]]=[a[j],a[i]];
+      }
+      return a;
+    }
+    function drawRandom(count){
+      const target = normalizeCount(count);
+      randomCount.value = target;
+      const selected = [];
+      sections.forEach(section => {
+        const pool = section.items;
+        selected.push(pool[Math.floor(Math.random() * pool.length)].id);
+      });
+      const selectedSet = new Set(selected);
+      const rest = shuffle(flatQuestions().filter(q => !selectedSet.has(q.id)));
+      rest.slice(0, target - SECTION_COUNT).forEach(q => selected.push(q.id));
+      state.randomIds = selected.sort((a,b)=>a-b);
+      state.mode = 'random';
+      render(); save(false); showToast(`已抽取 ${state.randomIds.length} 题，并保证九类各有一题。`);
+    }
+    function currentQuestionList(){
+      let list = flatQuestions();
+      if(state.mode === 'random'){
+        if(!state.randomIds.length) drawRandom(randomCount.value || SECTION_COUNT);
+        const set = new Set(state.randomIds);
+        list = list.filter(q => set.has(q.id));
+      }
+      const key = (state.search || '').trim().toLowerCase();
+      if(key){
+        list = list.filter(q => `${q.section} ${q.question} ${q.hint}`.toLowerCase().includes(key));
+      }
+      return list;
+    }
+    function groupedVisible(){
+      const visible = currentQuestionList();
+      return sections.map((section, si) => ({
+        title: section.title,
+        items: visible.filter(q => q.sectionIndex === si)
+      })).filter(s => s.items.length > 0);
+    }
+    function renderModeButtons(){
+      allModeBtn.className = state.mode === 'all' ? 'active' : 'inactive';
+      randomModeBtn.className = state.mode === 'random' ? 'active' : 'inactive';
+    }
+    function render(){
+      renderModeButtons();
+      content.innerHTML = '';
+      nav.innerHTML = '';
+      const grouped = groupedVisible();
+      const visibleCount = grouped.reduce((sum, s) => sum + s.items.length, 0);
+      const modeText = state.mode === 'all' ? `全部题目：共 ${TOTAL_COUNT} 题` : `随机抽取：当前 ${state.randomIds.length || 0} 题，九类均衡`;
+      const filterText = state.search ? `；筛选后显示 ${visibleCount} 题` : '';
+      viewNote.textContent = modeText + filterText;
+      if(!grouped.length){
+        content.innerHTML = '<div class="empty">没有符合当前筛选条件的题目。</div>';
+      }
+      grouped.forEach(group => {
+        const sectionId = `section-${group.items[0].sectionIndex + 1}`;
+        const navTitle = document.createElement('div');
+        navTitle.className = 'nav-section';
+        navTitle.textContent = group.title;
+        nav.appendChild(navTitle);
+        const sec = document.createElement('section');
+        sec.className = 'section';
+        sec.id = sectionId;
+        sec.innerHTML = `<div class="section-head"><h3>${escapeHTML(group.title)}</h3><p>${group.items.length} 题</p></div>`;
+        group.items.forEach(q => {
+          const qid = `q${q.id}`;
+          const a = document.createElement('a');
+          a.href = `#${qid}`;
+          a.textContent = `${q.id}. ${q.question}`;
+          nav.appendChild(a);
+          const card = document.createElement('article');
+          card.className = 'question';
+          card.id = qid;
+          card.innerHTML = `
+            <p class="question-type">${escapeHTML(q.section)}</p>
+            <h4 class="question-title"><span class="qid">${q.id}</span><span>${escapeHTML(q.question)}</span></h4>
+            <p class="hint">${escapeHTML(q.hint)}</p>
+            <textarea class="answer" data-qid="q${q.id}" rows="5" placeholder="在此作答。你的回答会自动保存到当前浏览器。"></textarea>
+          `;
+          sec.appendChild(card);
+        });
+        content.appendChild(sec);
+      });
+      applyAnswersToDOM(loadStoredAnswers());
+      updateProgress();
+    }
+    function loadStoredAnswers(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return {};
+        const data = JSON.parse(raw);
+        return data.answers || {};
+      }catch(e){ return {}; }
+    }
+    function collect(){
+      const previous = loadStoredAnswers();
+      $$('.answer').forEach(el => { previous[el.dataset.qid] = el.value; });
+      return {
+        schema:'schnie.judgment.ethics.form.v1',
+        savedAt:new Date().toISOString(),
+        meta:{writer:writer.value || '', date:date.value || ''},
+        state:{mode:state.mode, randomIds:state.randomIds, randomCount:normalizeCount(randomCount.value), search:state.search},
+        answers:previous
+      };
+    }
+    function applyAnswersToDOM(answers){
+      $$('.answer').forEach(el => {
+        el.value = answers[el.dataset.qid] || '';
+        autoSize(el);
+      });
+    }
+    function save(show=false){
+      try{
+        const data = collect();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        status.textContent = `已保存 ${new Date().toLocaleTimeString('zh-CN',{hour12:false})}`;
+        if(show) showToast('已保存到当前浏览器。');
+      }catch(err){
+        status.textContent = '保存失败';
+        showToast('保存失败：浏览器本地存储不可用，建议导出 JSON。');
+      }
+      updateProgress();
+    }
+    function load(){
+      date.value = today();
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+          const data = JSON.parse(raw);
+          writer.value = data.meta?.writer || '';
+          date.value = data.meta?.date || today();
+          state = {...state, ...(data.state || {})};
+          if(!Array.isArray(state.randomIds)) state.randomIds = [];
+          randomCount.value = normalizeCount(data.state?.randomCount || randomCount.value);
+          searchInput.value = state.search || '';
+        }
+      }catch(err){ showToast('读取本地存档失败。'); }
+    }
+    function scheduleSave(){
+      clearTimeout(timer);
+      status.textContent = '正在编辑…';
+      timer = setTimeout(() => save(false), 450);
+    }
+    function visibleQuestionIds(){ return currentQuestionList().map(q => `q${q.id}`); }
+    function updateProgress(){
+      const ids = visibleQuestionIds();
+      const answers = loadStoredAnswers();
+      $$('.answer').forEach(el => answers[el.dataset.qid] = el.value);
+      const total = ids.length;
+      const done = ids.filter(id => (answers[id] || '').trim().length > 0).length;
+      progressNumber.textContent = `${done}/${total}`;
+      progressBar.style.width = total ? `${Math.round(done / total * 100)}%` : '0%';
+    }
+    function autoSize(el){
+      el.style.height = 'auto';
+      el.style.height = Math.max(128, el.scrollHeight) + 'px';
+    }
+    function download(filename, text, type='text/plain;charset=utf-8'){
+      const blob = new Blob([text], {type});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+    function safeDateForFile(){ return (date.value || today()).replaceAll('-',''); }
+    function exportJSON(){
+      const data = collect();
+      download(`社会判断与伦理问答-${safeDateForFile()}.json`, JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
+      showToast('JSON 已导出。');
+    }
+    function markdownFor(list, title){
+      const data = collect();
+      const lines = [];
+      lines.push(`# ${title}`);
+      if(data.meta.writer) lines.push(`作答者：${data.meta.writer}`);
+      if(data.meta.date) lines.push(`日期：${data.meta.date}`);
+      lines.push(`模式：${state.mode === 'all' ? '全部题目' : '随机抽取'}`);
+      lines.push('');
+      let lastSection = '';
+      list.forEach(q => {
+        if(q.section !== lastSection){
+          lines.push(`## ${q.section}`);
+          lines.push('');
+          lastSection = q.section;
+        }
+        lines.push(`### ${q.id}. ${q.question}`);
+        if(q.hint) lines.push(q.hint);
+        lines.push('');
+        lines.push(data.answers[`q${q.id}`] || '');
+        lines.push('');
+      });
+      return lines.join('\n');
+    }
+    function exportCurrentMarkdown(){
+      const list = currentQuestionList();
+      download(`社会判断与伦理问答-当前视图-${safeDateForFile()}.md`, markdownFor(list, '社会判断与伦理问答：当前视图'), 'text/markdown;charset=utf-8');
+      showToast('当前视图 Markdown 已导出。');
+    }
+    function exportAllMarkdown(){
+      const list = flatQuestions();
+      download(`社会判断与伦理问答-全部题目-${safeDateForFile()}.md`, markdownFor(list, '社会判断与伦理问答：全部题目'), 'text/markdown;charset=utf-8');
+      showToast('全部题目 Markdown 已导出。');
+    }
+    function importJSON(file){
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const data = JSON.parse(String(reader.result || '{}'));
+          writer.value = data.meta?.writer || '';
+          date.value = data.meta?.date || today();
+          state = {mode:'all', randomIds:[], search:'', ...(data.state || {})};
+          if(!Array.isArray(state.randomIds)) state.randomIds = [];
+          randomCount.value = normalizeCount(data.state?.randomCount || randomCount.value);
+          searchInput.value = state.search || '';
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          render();
+          showToast('JSON 已导入并保存。');
+        }catch(err){ showToast('导入失败：不是可识别的 JSON 文件。'); }
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+    function clearAll(){
+      if(!confirm('确认清空本页全部填写内容？建议先导出 JSON 备份。')) return;
+      writer.value = '';
+      date.value = today();
+      state = { mode:'all', randomIds:[], search:'' };
+      searchInput.value = '';
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+      render(); status.textContent = '已清空'; showToast('已清空当前浏览器中的存档。');
+    }
+    function showToast(message){
+      toast.textContent = message; toast.classList.add('show'); clearTimeout(showToast.t);
+      showToast.t = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+    load();
+    render();
+    document.addEventListener('input', e => {
+      if(e.target.matches('.answer')) autoSize(e.target);
+      if(e.target.matches('.answer, #writer, #date')) { updateProgress(); scheduleSave(); }
+    });
+    searchInput.addEventListener('input', e => { state.search = e.target.value; render(); save(false); });
+    $('#clearSearchBtn').addEventListener('click', () => { state.search = ''; searchInput.value = ''; render(); save(false); });
+    $('#saveBtn').addEventListener('click', () => save(true));
+    $('#exportJsonBtn').addEventListener('click', exportJSON);
+    $('#exportMdBtn').addEventListener('click', exportCurrentMarkdown);
+    $('#exportAllMdBtn').addEventListener('click', exportAllMarkdown);
+    $('#printBtn').addEventListener('click', () => window.print());
+    $('#clearBtn').addEventListener('click', clearAll);
+    $('#importJson').addEventListener('change', e => { importJSON(e.target.files?.[0]); e.target.value = ''; });
+    allModeBtn.addEventListener('click', () => { state.mode = 'all'; render(); save(false); });
+    randomModeBtn.addEventListener('click', () => { state.mode = 'random'; if(!state.randomIds.length) drawRandom(randomCount.value); else { render(); save(false); } });
+    $('#drawBtn').addEventListener('click', () => drawRandom(randomCount.value));
+    randomCount.addEventListener('change', () => { randomCount.value = normalizeCount(randomCount.value); scheduleSave(); });
+    window.addEventListener('beforeunload', () => save(false));
+  })();
+  </script>
+</body>
+</html>
