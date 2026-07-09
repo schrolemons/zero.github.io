@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>社会判断与伦理问答｜SCHNIE</title>
-  <meta name="description" content="一个纯 HTML 的社会判断与伦理问答填写页，支持全量作答、随机抽取、本地保存、导入与导出。" />
+  <title>价值判断与人生观点｜SCHNIE</title>
+  <meta name="description" content="一个纯 HTML 的价值判断与人生观点填写页，支持全量作答、随机抽取、本地保存、导入与导出。" />
   <style>
     :root{
       --bg:#f7f7f4;
@@ -1002,7 +1002,7 @@
     function safeDateForFile(){ return (date.value || today()).replaceAll('-',''); }
     function exportJSON(){
       const data = collect();
-      download(`社会判断与伦理问答-${safeDateForFile()}.json`, JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
+      download(`价值判断与人生观点-${safeDateForFile()}.json`, JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
       showToast('JSON 已导出。');
     }
     function markdownFor(list, title){
@@ -1030,12 +1030,12 @@
     }
     function exportCurrentMarkdown(){
       const list = currentQuestionList();
-      download(`社会判断与伦理问答-当前视图-${safeDateForFile()}.md`, markdownFor(list, '社会判断与伦理问答：当前视图'), 'text/markdown;charset=utf-8');
+      download(`价值判断与人生观点-当前视图-${safeDateForFile()}.md`, markdownFor(list, '价值判断与人生观点：当前视图'), 'text/markdown;charset=utf-8');
       showToast('当前视图 Markdown 已导出。');
     }
     function exportAllMarkdown(){
       const list = flatQuestions();
-      download(`社会判断与伦理问答-全部题目-${safeDateForFile()}.md`, markdownFor(list, '社会判断与伦理问答：全部题目'), 'text/markdown;charset=utf-8');
+      download(`价值判断与人生观点-全部题目-${safeDateForFile()}.md`, markdownFor(list, '价值判断与人生观点：全部题目'), 'text/markdown;charset=utf-8');
       showToast('全部题目 Markdown 已导出。');
     }
     function importJSON(file){
