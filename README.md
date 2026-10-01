@@ -27,6 +27,8 @@ hexo d
 
 源码推送与网站发布分别执行：推送 `source` 不会发布网站，`hexo d` 不会备份源码。
 
+`source` 分支根目录的 `vercel.json` 使用 `git.deploymentEnabled.source: false`，禁止 Vercel 的 Git 集成为该分支自动创建预览部署。此配置应保留在源码分支；`main` 的网站发布仍由原有 Hexo 流程维护。配置依据：[Vercel Git Configuration](https://vercel.com/docs/project-configuration/git-configuration#gitdeploymentenabled)。
+
 ## 从源码恢复
 
 ```powershell
