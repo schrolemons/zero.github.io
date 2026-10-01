@@ -1,0 +1,19 @@
+.DS_Store
+Thumbs.db
+db.json
+*.log
+node_modules/
+public/
+.deploy*/
+_multiconfig.yml
+
+# Local editor and assistant caches
+.idea/
+.vscode/
+.serena/
+.claude/
+
+# Local environment files
+.env
+.env.*
+!.env.example
